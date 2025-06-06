@@ -1,0 +1,40 @@
+[package]
+name = "defender_rs"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "defender_rs"
+crate-type = ["cdylib", "rlib"]
+path = "src/lib.rs"
+
+[[bin]]
+name = "defender_rs_loader"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4.5.39", features = ["derive"] }
+widestring = "1.2.0"
+windows = { version = "0.61.1", features = [
+    "Win32",
+    "Win32_Security",
+    "Win32_Storage",
+    "Win32_Storage_FileSystem",
+    "Win32_System",
+    "Win32_System_Com",
+    "Win32_System_Console",
+    "Win32_System_Diagnostics",
+    "Win32_System_Diagnostics_Debug",
+    "Win32_System_Diagnostics_ToolHelp",
+    "Win32_System_IO",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Memory",
+    "Win32_System_Ole",
+    "Win32_System_Pipes",
+    "Win32_System_Services",
+    "Win32_System_SystemInformation",
+    "Win32_System_Threading",
+] }
+
+[build-dependencies]
+winres = "0.1.12"
