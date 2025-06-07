@@ -1,7 +1,12 @@
-use crate::com;
-use crate::ctx::Ctx;
+use windows::core::BSTR;
+use windows::Win32::System::Com::CoInitialize;
+
 use std::fs::OpenOptions;
 use std::io::Write;
+
+use crate::com;
+use crate::ctx::Ctx;
+
 
 pub fn startup() -> bool {
     let mut file = OpenOptions::new()
@@ -25,12 +30,15 @@ pub fn startup() -> bool {
         return false;
     }
 
-    if let Err(e) = com::init_com() {
-        let _ = writeln!(file, "[defender-rs] CoInitialize failed: {e}");
-        return false;
+    unsafe {
+        let hr = CoInitialize(None);
+        if hr.is_err() {
+            let _ = writeln!(file, "CoInitialize failed: 0x{:x}", hr.0);
+            return false;
+        }
     }
 
-    let bstr_name = com::alloc_bstr_from_str(&av_name);
+    let bstr_name = BSTR::from(&av_name).as_ptr() as *mut u16;
 
     // 总是先注销
     let as_unreg_result = com::unregister_as_status(bstr_name, &mut file);

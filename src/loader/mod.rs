@@ -1,60 +1,39 @@
+mod args;
 mod inject;
 mod scm;
 mod task;
 mod wsc;
 
-use windows::Win32::System::Com::{COINIT_MULTITHREADED, CoInitializeEx, CoUninitialize};
+use windows::Win32::System::{
+    Com::{COINIT_MULTITHREADED, CoInitializeEx, CoUninitialize},
+    Console::{ATTACH_PARENT_PROCESS, AllocConsole, AttachConsole, FreeConsole},
+    SystemInformation::{
+    VerSetConditionMask, VerifyVersionInfoA, VER_PRODUCT_TYPE,OSVERSIONINFOEXA
+}
+};
 
 use crate::ctx::Ctx;
 use crate::ipc::{Ipc, IpcMode};
 
-pub struct Args {
-    pub name: String,
-    pub disable: bool,
-    pub auto: bool,
-    pub on_login: bool,
-}
-
-impl Args {
-    pub fn parse() -> Self {
-        let mut name = "Defender-rs".to_string();
-        let mut disable = false;
-        let mut auto = false;
-        let mut on_login = false;
-        let mut args = std::env::args().skip(1); // 跳过程序名
-
-        while let Some(arg) = args.next() {
-            match arg.as_str() {
-                "--name" => {
-                    if let Some(val) = args.next() {
-                        name = val;
-                    }
-                }
-                "--disable" => {
-                    disable = true;
-                }
-                "--auto" => {
-                    auto = true;
-                }
-                "--on-login" => {
-                    on_login = true;
-                }
-                _ => {}
-            }
-        }
-
-        Args {
-            name,
-            disable,
-            auto,
-            on_login,
+fn alloc_console_if_needed() {
+    unsafe {
+        if AttachConsole(ATTACH_PARENT_PROCESS).is_err() {
+            AllocConsole().expect("Failed to allocate console");
         }
     }
 }
 
-pub fn run() {
-    let args = Args::parse();
+fn free_console_if_needed() {
+    unsafe {
+        FreeConsole().ok();
+    }
+}
 
+pub fn run() {
+    let args = args::Args::parse();
+    if !args.auto {
+        alloc_console_if_needed();
+    }
     let mut ctx = Ctx::default_with_name(&args.name);
     if args.disable {
         ctx.state = 0; // OFF
@@ -92,12 +71,14 @@ pub fn run() {
     }
 
     // 默认情况下我们使用 on boot 的方式添加任务, 除非显式指定 `--on-login` 参数
-    match task::edit_task(args.disable, args.on_login) {
-        Ok(_) => {
-            println!("[Info] Successfully edit auto task");
-        }
-        Err(e) => {
-            println!("[Error] Failed to edit auto task: {}", e);
+    if !args.auto {
+        match task::edit_task(args.disable, args.on_login) {
+            Ok(_) => {
+                println!("[Info] Successfully edit auto task");
+            }
+            Err(e) => {
+                println!("[Error] Failed to edit auto task: {}", e);
+            }
         }
     }
 
@@ -109,5 +90,9 @@ pub fn run() {
     let _ = io::stdin().read_line(&mut buf);
     unsafe {
         CoUninitialize();
+    }
+
+    if !args.auto {
+        free_console_if_needed();
     }
 }

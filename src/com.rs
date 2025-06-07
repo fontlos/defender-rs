@@ -1,7 +1,7 @@
 use std::ffi::c_void;
 use std::io::Write;
 use windows::Win32::System::Com::{CLSCTX_ALL, CoInitialize};
-use windows::core::{GUID, HRESULT, PCWSTR};
+use windows::core::{GUID, HRESULT};
 
 // WSC接口相关GUID
 const CLSID_WSC_ISV: GUID = GUID::from_values(
@@ -10,17 +10,47 @@ const CLSID_WSC_ISV: GUID = GUID::from_values(
     0x450C,
     [0xB3, 0x0F6, 0x92, 0xBE, 0x16, 0x93, 0xBD, 0xF2],
 );
-const IID_IWSC_ASSTATUS: GUID = GUID::from_values(
-    0x24E9756,
-    0xBA6C,
-    0x4AD1,
-    [0x83, 0x21, 0x87, 0xBA, 0xE7, 0x8F, 0xD0, 0xE3],
-);
+
+// const IID_IWSC_FWSTATUS: GUID = GUID::from_values(
+//     0x9B8F6C6E,
+//     0x8A4A,
+//     0x4891,
+//     [0xAF, 0x63, 0x1A, 0x2F, 0x50, 0x92, 0x40, 0x40],
+// );
+
+// const IID_IWSC_FWSTATUS2: GUID = GUID::from_values(
+//     0x62F698CB,
+//     0x94A,
+//     0x4C68,
+//     [0x94, 0x19, 0x8E, 0x8C, 0x49, 0x42, 0x0E, 0x59],
+// );
+
+// const IID_IWSC_AVSTATUS: GUID = GUID::from_values(
+//     0x3901A765,
+//     0xAB91,
+//     0x4BA9,
+//     [0xA5, 0x53, 0x5B, 0x85, 0x38, 0xDE, 0xB8, 0x40],
+// );
+
+// const IID_IWSC_AVSTATUS3: GUID = GUID::from_values(
+//     0xCF007CA2,
+//     0xF5E3,
+//     0x11E5,
+//     [0x9C, 0xE9, 0x5E, 0x55, 0x17, 0x50, 0x7C, 0x66],
+// );
+
 const IID_IWSC_AVSTATUS4: GUID = GUID::from_values(
     0x4DCBAFAC,
     0x29BA,
     0x46B1,
     [0x80, 0xFC, 0xB8, 0xBD, 0xE3, 0xC0, 0xAE, 0x4D],
+);
+
+const IID_IWSC_ASSTATUS: GUID = GUID::from_values(
+    0x24E9756,
+    0xBA6C,
+    0x4AD1,
+    [0x83, 0x21, 0x87, 0xBA, 0xE7, 0x8F, 0xD0, 0xE3],
 );
 
 #[repr(C)]
@@ -112,26 +142,6 @@ pub struct IWscAVStatus4Vtbl {
     pub unregister_as: unsafe extern "system" fn(this: *mut c_void) -> HRESULT,
     pub update_status_as:
         unsafe extern "system" fn(this: *mut c_void, state: u32, unk: i32) -> HRESULT,
-}
-
-unsafe extern "system" {
-    fn SysAllocString(psz: PCWSTR) -> *mut u16;
-}
-
-pub fn init_com() -> Result<(), String> {
-    unsafe {
-        let hr = CoInitialize(None);
-        if hr.is_err() {
-            return Err(format!("CoInitialize failed: 0x{:x}", hr.0));
-        }
-    }
-    Ok(())
-}
-
-// BSTR 分配
-pub fn alloc_bstr_from_str(s: &str) -> *mut u16 {
-    let wide: Vec<u16> = s.encode_utf16().chain(Some(0)).collect();
-    unsafe { SysAllocString(PCWSTR(wide.as_ptr())) }
 }
 
 // 原生 CoCreateInstance FFI
