@@ -106,7 +106,12 @@ pub fn remove_task() -> Result<(), String> {
             CoCreateInstance(&TaskScheduler, None, CLSCTX_INPROC_SERVER)
                 .map_err(|e| format!("CoCreateInstance failed: {e:?}"))?;
         task_service
-            .Connected()
+            .Connect(
+                &VARIANT::default(),
+                &VARIANT::default(),
+                &VARIANT::default(),
+                &VARIANT::default(),
+            )
             .map_err(|e| format!("Connect failed: {e:?}"))?;
         let root_folder = task_service
             .GetFolder(&BSTR::from("\\"))
