@@ -170,7 +170,10 @@ pub fn register_as_status(name: *mut u16) -> Result<(), String> {
         let mut obj: *mut c_void = std::ptr::null_mut();
         let hr = cocreate_instance(&CLSID_WSC_ISV, &IID_IWSC_ASSTATUS, &mut obj);
         if hr.0 < 0 || obj.is_null() {
-            debug!("[defender-rs] CoCreateInstance IWscASStatus failed: 0x{:x}", hr.0);
+            debug!(
+                "[defender-rs] CoCreateInstance IWscASStatus failed: 0x{:x}",
+                hr.0
+            );
             debug!("[defender-rs] CLSID_WSC_ISV: {CLSID_WSC_ISV:?}");
             debug!("[defender-rs] IID_IWSC_ASSTATUS: {IID_IWSC_ASSTATUS:?}");
             debug!("[defender-rs] PID: {}", std::process::id());
@@ -198,7 +201,10 @@ pub fn register_av_status(name: *mut u16) -> Result<(), String> {
         let mut obj: *mut c_void = std::ptr::null_mut();
         let hr = cocreate_instance(&CLSID_WSC_ISV, &IID_IWSC_AVSTATUS4, &mut obj);
         if hr.0 < 0 || obj.is_null() {
-            debug!("[defender-rs][error] CoCreateInstance IWscAVStatus4 failed: 0x{:x}", hr.0);
+            debug!(
+                "[defender-rs][error] CoCreateInstance IWscAVStatus4 failed: 0x{:x}",
+                hr.0
+            );
             debug!("[defender-rs][debug] CLSID_WSC_ISV: {CLSID_WSC_ISV:?}");
             debug!("[defender-rs][debug] IID_IWSC_AVSTATUS4: {IID_IWSC_AVSTATUS4:?}");
             debug!("[defender-rs][debug] PID: {}", std::process::id());

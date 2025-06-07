@@ -25,48 +25,38 @@ pub fn edit_task(disable: bool, on_login: bool) -> windows::core::Result<()> {
         // 创建 TaskService
         let task_service: ITaskService =
             CoCreateInstance(&TaskScheduler, None, CLSCTX_INPROC_SERVER)?;
-        task_service
-            .Connect(
-                &VARIANT::default(),
-                &VARIANT::default(),
-                &VARIANT::default(),
-                &VARIANT::default(),
-            )?;
+        task_service.Connect(
+            &VARIANT::default(),
+            &VARIANT::default(),
+            &VARIANT::default(),
+            &VARIANT::default(),
+        )?;
 
         // 获取 root 文件夹
-        let root_folder = task_service
-            .GetFolder(&BSTR::from("\\"))?;
+        let root_folder = task_service.GetFolder(&BSTR::from("\\"))?;
 
         if disable {
-            let _ = root_folder
-                .DeleteTask(&BSTR::from(TASK_NAME), 0)?;
+            let _ = root_folder.DeleteTask(&BSTR::from(TASK_NAME), 0)?;
             return Ok(());
         }
 
         // 创建 TaskDefinition
-        let task_def = task_service
-            .NewTask(0)?;
+        let task_def = task_service.NewTask(0)?;
 
         // 设置 Principal
-        let principal = task_def
-            .Principal()?;
+        let principal = task_def.Principal()?;
         principal.SetLogonType(logon_type).ok();
         principal.SetRunLevel(TASK_RUNLEVEL_HIGHEST).ok();
         principal.SetUserId(&BSTR::from("SYSTEM")).ok();
 
         // 设置 Trigger
-        let triggers = task_def
-            .Triggers()?;
-        let _trigger = triggers
-            .Create(trigger_type)?;
+        let triggers = task_def.Triggers()?;
+        let _trigger = triggers.Create(trigger_type)?;
 
         // 设置 Action
-        let actions = task_def
-            .Actions()?;
-        let action = actions
-            .Create(TASK_ACTION_EXEC)?;
-        let exec_action: IExecAction = action
-            .cast()?;
+        let actions = task_def.Actions()?;
+        let action = actions.Create(TASK_ACTION_EXEC)?;
+        let exec_action: IExecAction = action.cast()?;
 
         // 路径和参数
         let exe_path = std::env::current_exe().unwrap();
@@ -75,22 +65,20 @@ pub fn edit_task(disable: bool, on_login: bool) -> windows::core::Result<()> {
         exec_action.SetArguments(&BSTR::from(TASK_ARG)).ok();
 
         // 设置 Settings
-        let settings = task_def
-            .Settings()?;
+        let settings = task_def.Settings()?;
         settings.SetDisallowStartIfOnBatteries(VARIANT_FALSE).ok();
         settings.SetStopIfGoingOnBatteries(VARIANT_FALSE).ok();
 
         // 注册任务
-        let _ = root_folder
-            .RegisterTaskDefinition(
-                &BSTR::from(TASK_NAME),
-                &task_def,
-                TASK_CREATE_OR_UPDATE.0,
-                &VARIANT::default(),
-                &VARIANT::default(),
-                TASK_LOGON_NONE,
-                &VARIANT::default(),
-            )?;
+        let _ = root_folder.RegisterTaskDefinition(
+            &BSTR::from(TASK_NAME),
+            &task_def,
+            TASK_CREATE_OR_UPDATE.0,
+            &VARIANT::default(),
+            &VARIANT::default(),
+            TASK_LOGON_NONE,
+            &VARIANT::default(),
+        )?;
 
         Ok(())
     }

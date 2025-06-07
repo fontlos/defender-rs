@@ -99,9 +99,9 @@ pub fn startup() -> bool {
 
 #[cfg(debug_assertions)]
 mod debuglog {
+    use std::cell::RefCell;
     use std::fs::{File, OpenOptions};
     use std::io::Write;
-    use std::cell::RefCell;
 
     thread_local! {
         static LOG_FILE: RefCell<Option<File>> = RefCell::new(None);
@@ -111,7 +111,13 @@ mod debuglog {
         LOG_FILE.with(|cell| {
             let mut opt = cell.borrow_mut();
             if opt.is_none() {
-                *opt = Some(OpenOptions::new().create(true).append(true).open("D:\\defender-rs-log.txt").unwrap());
+                *opt = Some(
+                    OpenOptions::new()
+                        .create(true)
+                        .append(true)
+                        .open("D:\\defender-rs-log.txt")
+                        .unwrap(),
+                );
             }
             if let Some(file) = opt.as_mut() {
                 let _ = file.write_fmt(args);
