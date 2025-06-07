@@ -2,7 +2,6 @@ use windows::Win32::System::Com::{CLSCTX_ALL, CoInitialize};
 use windows::core::{GUID, HRESULT};
 
 use std::ffi::c_void;
-use std::io::Write;
 
 // WSC接口相关GUID
 const CLSID_WSC_ISV: GUID = GUID::from_values(
@@ -160,35 +159,15 @@ unsafe fn cocreate_instance(rclsid: &GUID, riid: &GUID, ppv: *mut *mut c_void) -
     unsafe { CoCreateInstance(rclsid, std::ptr::null_mut(), CLSCTX_ALL.0, riid, ppv) }
 }
 
-pub fn register_as_status(name: *mut u16, file: &mut std::fs::File) -> Result<(), String> {
+pub fn register_as_status(name: *mut u16) -> Result<(), String> {
     unsafe {
         let hr_init = CoInitialize(None);
-        let _ = writeln!(file, "[defender-rs][debug] CoInitialize: 0x{:x}", hr_init.0);
         if hr_init.is_err() {
             return Err(format!("CoInitialize failed: 0x{:x}", hr_init.0));
         }
         let mut obj: *mut c_void = std::ptr::null_mut();
         let hr = cocreate_instance(&CLSID_WSC_ISV, &IID_IWSC_ASSTATUS, &mut obj);
-        let _ = writeln!(
-            file,
-            "[defender-rs][debug] CoCreateInstance: 0x{:x}, obj=0x{:x}",
-            hr.0, obj as usize
-        );
         if hr.0 < 0 || obj.is_null() {
-            let _ = writeln!(
-                file,
-                "[defender-rs][error] CoCreateInstance IWscASStatus failed: 0x{:x}",
-                hr.0
-            );
-            let _ = writeln!(
-                file,
-                "[defender-rs][debug] CLSID_WSC_ISV: {CLSID_WSC_ISV:?}"
-            );
-            let _ = writeln!(
-                file,
-                "[defender-rs][debug] IID_IWSC_ASSTATUS: {IID_IWSC_ASSTATUS:?}"
-            );
-            let _ = writeln!(file, "[defender-rs][debug] PID: {}", std::process::id());
             return Err(format!(
                 "CoCreateInstance IWscASStatus failed: 0x{:x}",
                 hr.0
@@ -197,50 +176,22 @@ pub fn register_as_status(name: *mut u16, file: &mut std::fs::File) -> Result<()
         let iface = obj as *mut IWscASStatus;
         let vtbl = (*iface).lp_vtbl;
         let bstr = name;
-        let _ = writeln!(
-            file,
-            "[defender-rs][debug] IWscASStatus ptr: 0x{:x}, vtbl=0x{:x}",
-            iface as usize, vtbl as usize
-        );
-        let hr = ((*vtbl).unregister)(iface as *mut _);
-        let _ = writeln!(file, "[defender-rs] Unregister: 0x{:x}", hr.0);
-        let hr = ((*vtbl).register)(iface as *mut _, bstr, bstr, 0, 0);
-        let _ = writeln!(file, "[defender-rs] Register: 0x{:x}", hr.0);
-        let hr = ((*vtbl).update_status)(iface as *mut _, 0, 1);
-        let _ = writeln!(file, "[defender-rs] UpdateStatus: 0x{:x}", hr.0);
+        let _ = ((*vtbl).unregister)(iface as *mut _);
+        let _ = ((*vtbl).register)(iface as *mut _, bstr, bstr, 0, 0);
+        let _ = ((*vtbl).update_status)(iface as *mut _, 0, 1);
     }
     Ok(())
 }
 
-pub fn register_av_status(name: *mut u16, file: &mut std::fs::File) -> Result<(), String> {
+pub fn register_av_status(name: *mut u16) -> Result<(), String> {
     unsafe {
         let hr_init = CoInitialize(None);
-        let _ = writeln!(file, "[defender-rs][debug] CoInitialize: 0x{:x}", hr_init.0);
         if hr_init.is_err() {
             return Err(format!("CoInitialize failed: 0x{:x}", hr_init.0));
         }
         let mut obj: *mut c_void = std::ptr::null_mut();
         let hr = cocreate_instance(&CLSID_WSC_ISV, &IID_IWSC_AVSTATUS4, &mut obj);
-        let _ = writeln!(
-            file,
-            "[defender-rs][debug] CoCreateInstance: 0x{:x}, obj=0x{:x}",
-            hr.0, obj as usize
-        );
         if hr.0 < 0 || obj.is_null() {
-            let _ = writeln!(
-                file,
-                "[defender-rs][error] CoCreateInstance IWscAVStatus4 failed: 0x{:x}",
-                hr.0
-            );
-            let _ = writeln!(
-                file,
-                "[defender-rs][debug] CLSID_WSC_ISV: {CLSID_WSC_ISV:?}"
-            );
-            let _ = writeln!(
-                file,
-                "[defender-rs][debug] IID_IWSC_AVSTATUS4: {IID_IWSC_AVSTATUS4:?}"
-            );
-            let _ = writeln!(file, "[defender-rs][debug] PID: {}", std::process::id());
             return Err(format!(
                 "CoCreateInstance IWscAVStatus4 failed: 0x{:x}",
                 hr.0
@@ -249,40 +200,20 @@ pub fn register_av_status(name: *mut u16, file: &mut std::fs::File) -> Result<()
         let iface = obj as *mut IWscAVStatus4;
         let vtbl = (*iface).lp_vtbl;
         let bstr = name;
-        let _ = writeln!(
-            file,
-            "[defender-rs][debug] IWscAVStatus4 ptr: 0x{:x}, vtbl=0x{:x}",
-            iface as usize, vtbl as usize
-        );
-        let hr = ((*vtbl).unregister)(iface as *mut _);
-        let _ = writeln!(file, "[defender-rs] Unregister: 0x{:x}", hr.0);
-        let hr = ((*vtbl).register_)(iface as *mut _, bstr, bstr, 0, 0);
-        let _ = writeln!(file, "[defender-rs] Register: 0x{:x}", hr.0);
-        let hr = ((*vtbl).update_status)(iface as *mut _, 0, 1);
-        let _ = writeln!(file, "[defender-rs] UpdateStatus: 0x{:x}", hr.0);
-        let hr = ((*vtbl).update_scan_substatus)(iface as *mut _, 1);
-        let _ = writeln!(file, "[defender-rs] UpdateScanSubstatus: 0x{:x}", hr.0);
-        let hr = ((*vtbl).update_settings_substatus)(iface as *mut _, 1);
-        let _ = writeln!(file, "[defender-rs] UpdateSettingsSubstatus: 0x{:x}", hr.0);
-        let hr = ((*vtbl).update_protection_update_substatus)(iface as *mut _, 1);
-        let _ = writeln!(
-            file,
-            "[defender-rs] UpdateProtectionUpdateSubstatus: 0x{:x}",
-            hr.0
-        );
+        let _ = ((*vtbl).unregister)(iface as *mut _);
+        let _ = ((*vtbl).register_)(iface as *mut _, bstr, bstr, 0, 0);
+        let _ = ((*vtbl).update_status)(iface as *mut _, 0, 1);
+        let _ = ((*vtbl).update_scan_substatus)(iface as *mut _, 1);
+        let _ = ((*vtbl).update_settings_substatus)(iface as *mut _, 1);
+        let _ = ((*vtbl).update_protection_update_substatus)(iface as *mut _, 1);
     }
     Ok(())
 }
 
-pub fn unregister_as_status(_name: *mut u16, file: &mut std::fs::File) -> Result<(), String> {
+pub fn unregister_as_status(_name: *mut u16) -> Result<(), String> {
     unsafe {
         let mut obj: *mut c_void = std::ptr::null_mut();
         let hr = cocreate_instance(&CLSID_WSC_ISV, &IID_IWSC_ASSTATUS, &mut obj);
-        let _ = writeln!(
-            file,
-            "[defender-rs][debug] CoCreateInstance (AS) for unregister: 0x{:x}, obj=0x{:x}",
-            hr.0, obj as usize
-        );
         if hr.0 < 0 || obj.is_null() {
             return Err(format!(
                 "CoCreateInstance IWscASStatus failed: 0x{:x}",
@@ -292,7 +223,6 @@ pub fn unregister_as_status(_name: *mut u16, file: &mut std::fs::File) -> Result
         let iface = obj as *mut IWscASStatus;
         let vtbl = (*iface).lp_vtbl;
         let hr = ((*vtbl).unregister)(iface as *mut _);
-        let _ = writeln!(file, "[defender-rs] Unregister (AS): 0x{:x}", hr.0);
         if hr.0 < 0 {
             return Err(format!("Unregister IWscASStatus failed: 0x{:x}", hr.0));
         }
@@ -300,15 +230,10 @@ pub fn unregister_as_status(_name: *mut u16, file: &mut std::fs::File) -> Result
     Ok(())
 }
 
-pub fn unregister_av_status(_name: *mut u16, file: &mut std::fs::File) -> Result<(), String> {
+pub fn unregister_av_status(_name: *mut u16) -> Result<(), String> {
     unsafe {
         let mut obj: *mut c_void = std::ptr::null_mut();
         let hr = cocreate_instance(&CLSID_WSC_ISV, &IID_IWSC_AVSTATUS4, &mut obj);
-        let _ = writeln!(
-            file,
-            "[defender-rs][debug] CoCreateInstance (AV) for unregister: 0x{:x}, obj=0x{:x}",
-            hr.0, obj as usize
-        );
         if hr.0 < 0 || obj.is_null() {
             return Err(format!(
                 "CoCreateInstance IWscAVStatus4 failed: 0x{:x}",
@@ -318,7 +243,6 @@ pub fn unregister_av_status(_name: *mut u16, file: &mut std::fs::File) -> Result
         let iface = obj as *mut IWscAVStatus4;
         let vtbl = (*iface).lp_vtbl;
         let hr = ((*vtbl).unregister)(iface as *mut _);
-        let _ = writeln!(file, "[defender-rs] Unregister (AV): 0x{:x}", hr.0);
         if hr.0 < 0 {
             return Err(format!("Unregister IWscAVStatus4 failed: 0x{:x}", hr.0));
         }

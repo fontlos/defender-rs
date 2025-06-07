@@ -12,7 +12,7 @@ use windows::Win32::{
 };
 use windows::core::{BSTR, Interface};
 
-pub fn edit_task(disable: bool, on_login: bool) -> Result<(), String> {
+pub fn edit_task(disable: bool, on_login: bool) -> windows::core::Result<()> {
     const TASK_NAME: &str = "Defender-rs";
     const TASK_ARG: &str = "--auto";
     let (trigger_type, logon_type) = if !on_login {
@@ -24,71 +24,59 @@ pub fn edit_task(disable: bool, on_login: bool) -> Result<(), String> {
     unsafe {
         // 创建 TaskService
         let task_service: ITaskService =
-            CoCreateInstance(&TaskScheduler, None, CLSCTX_INPROC_SERVER)
-                .map_err(|e| format!("CoCreateInstance failed: {e:?}"))?;
+            CoCreateInstance(&TaskScheduler, None, CLSCTX_INPROC_SERVER)?;
         task_service
             .Connect(
                 &VARIANT::default(),
                 &VARIANT::default(),
                 &VARIANT::default(),
                 &VARIANT::default(),
-            )
-            .map_err(|e| format!("Connect failed: {e:?}"))?;
+            )?;
 
         // 获取 root 文件夹
         let root_folder = task_service
-            .GetFolder(&BSTR::from("\\"))
-            .map_err(|e| format!("GetFolder failed: {e:?}"))?;
+            .GetFolder(&BSTR::from("\\"))?;
 
         if disable {
             let _ = root_folder
-                .DeleteTask(&BSTR::from(TASK_NAME), 0)
-                .map_err(|e| format!("DeleteTask failed: {e:?}"))?;
+                .DeleteTask(&BSTR::from(TASK_NAME), 0)?;
             return Ok(());
         }
 
         // 创建 TaskDefinition
         let task_def = task_service
-            .NewTask(0)
-            .map_err(|e| format!("NewTask failed: {e:?}"))?;
+            .NewTask(0)?;
 
         // 设置 Principal
         let principal = task_def
-            .Principal()
-            .map_err(|e| format!("Get Principal failed: {e:?}"))?;
+            .Principal()?;
         principal.SetLogonType(logon_type).ok();
         principal.SetRunLevel(TASK_RUNLEVEL_HIGHEST).ok();
         principal.SetUserId(&BSTR::from("SYSTEM")).ok();
 
         // 设置 Trigger
         let triggers = task_def
-            .Triggers()
-            .map_err(|e| format!("Get Triggers failed: {e:?}"))?;
+            .Triggers()?;
         let _trigger = triggers
-            .Create(trigger_type)
-            .map_err(|e| format!("Create Trigger failed: {e:?}"))?;
+            .Create(trigger_type)?;
 
         // 设置 Action
         let actions = task_def
-            .Actions()
-            .map_err(|e| format!("Get Actions failed: {e:?}"))?;
+            .Actions()?;
         let action = actions
-            .Create(TASK_ACTION_EXEC)
-            .map_err(|e| format!("Create Action failed: {e:?}"))?;
+            .Create(TASK_ACTION_EXEC)?;
         let exec_action: IExecAction = action
-            .cast()
-            .map_err(|e| format!("Query IExecAction failed: {e:?}"))?;
+            .cast()?;
 
         // 路径和参数
-        let exe_path = std::env::current_exe().map_err(|e| format!("current_exe failed: {e:?}"))?;
-        let exe_path_str = exe_path.to_str().ok_or("exe_path to_str failed")?;
+        let exe_path = std::env::current_exe().unwrap();
+        let exe_path_str = exe_path.to_str().unwrap();
         exec_action.SetPath(&BSTR::from(exe_path_str)).ok();
         exec_action.SetArguments(&BSTR::from(TASK_ARG)).ok();
 
         // 设置 Settings
         let settings = task_def
-            .Settings()
-            .map_err(|e| format!("Get Settings failed: {e:?}"))?;
+            .Settings()?;
         settings.SetDisallowStartIfOnBatteries(VARIANT_FALSE).ok();
         settings.SetStopIfGoingOnBatteries(VARIANT_FALSE).ok();
 
@@ -102,8 +90,7 @@ pub fn edit_task(disable: bool, on_login: bool) -> Result<(), String> {
                 &VARIANT::default(),
                 TASK_LOGON_NONE,
                 &VARIANT::default(),
-            )
-            .map_err(|e| format!("RegisterTaskDefinition failed: {e:?}"))?;
+            )?;
 
         Ok(())
     }

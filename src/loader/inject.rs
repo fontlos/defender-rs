@@ -50,8 +50,8 @@ pub fn inject(dll_path: &str, proc_name: &str) -> windows::core::Result<HANDLE> 
 
     // 分离调试器
     unsafe {
-        DebugSetProcessKillOnExit(false).unwrap();
-        DebugActiveProcessStop(pi.dwProcessId).unwrap();
+        DebugSetProcessKillOnExit(false)?;
+        DebugActiveProcessStop(pi.dwProcessId)?;
     }
 
     // 写入 DLL 路径
@@ -67,7 +67,7 @@ pub fn inject(dll_path: &str, proc_name: &str) -> windows::core::Result<HANDLE> 
     };
     if mem.is_null() {
         unsafe {
-            CloseHandle(pi.hThread).unwrap();
+            CloseHandle(pi.hThread)?;
         }
         return Err(windows::core::Error::from_win32());
     }
@@ -83,14 +83,14 @@ pub fn inject(dll_path: &str, proc_name: &str) -> windows::core::Result<HANDLE> 
     };
     if write_ok.is_err() {
         unsafe {
-            VirtualFreeEx(pi.hProcess, mem, 0, MEM_RELEASE).unwrap();
-            CloseHandle(pi.hThread).unwrap();
+            VirtualFreeEx(pi.hProcess, mem, 0, MEM_RELEASE)?;
+            CloseHandle(pi.hThread)?;
         }
         return Err(windows::core::Error::from_win32());
     }
 
     // 远程线程 LoadLibraryA
-    let h_kernel32 = unsafe { GetModuleHandleA(PCSTR(b"kernel32.dll\0".as_ptr())).unwrap() };
+    let h_kernel32 = unsafe { GetModuleHandleA(PCSTR(b"kernel32.dll\0".as_ptr()))? };
     let load_library =
         unsafe { GetProcAddress(h_kernel32, PCSTR(b"LoadLibraryA\0".as_ptr())).unwrap() };
     let thread = unsafe {
@@ -102,15 +102,14 @@ pub fn inject(dll_path: &str, proc_name: &str) -> windows::core::Result<HANDLE> 
             Some(mem),
             0,
             None,
-        )
-        .unwrap()
+        )?
     };
 
     unsafe {
         WaitForSingleObject(thread, INFINITE);
-        CloseHandle(thread).unwrap();
-        VirtualFreeEx(pi.hProcess, mem, 0, MEM_RELEASE).unwrap();
-        CloseHandle(pi.hThread).unwrap();
+        CloseHandle(thread)?;
+        VirtualFreeEx(pi.hProcess, mem, 0, MEM_RELEASE)?;
+        CloseHandle(pi.hThread)?;
     }
     Ok(pi.hProcess)
 }
