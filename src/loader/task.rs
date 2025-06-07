@@ -12,7 +12,9 @@ use windows::Win32::{
 };
 use windows::core::{BSTR, Interface};
 
-pub fn add_task(on_login: bool) -> Result<(), String> {
+pub fn edit_task(disable: bool, on_login: bool) -> Result<(), String> {
+    const TASK_NAME: &str = "Defender-rs";
+    const TASK_ARG: &str = "--auto";
     unsafe {
         let (trigger_type, logon_type) = if !on_login {
             (TASK_TRIGGER_BOOT, TASK_LOGON_SERVICE_ACCOUNT)
@@ -37,6 +39,13 @@ pub fn add_task(on_login: bool) -> Result<(), String> {
         let root_folder = task_service
             .GetFolder(&BSTR::from("\\"))
             .map_err(|e| format!("GetFolder failed: {e:?}"))?;
+
+        if disable {
+            let _ = root_folder
+                .DeleteTask(&BSTR::from(TASK_NAME), 0)
+                .map_err(|e| format!("DeleteTask failed: {e:?}"))?;
+            return Ok(());
+        }
 
         // 创建 TaskDefinition
         let task_def = task_service
@@ -74,7 +83,7 @@ pub fn add_task(on_login: bool) -> Result<(), String> {
         let exe_path = std::env::current_exe().map_err(|e| format!("current_exe failed: {e:?}"))?;
         let exe_path_str = exe_path.to_str().ok_or("exe_path to_str failed")?;
         exec_action.SetPath(&BSTR::from(exe_path_str)).ok();
-        exec_action.SetArguments(&BSTR::from("--auto")).ok();
+        exec_action.SetArguments(&BSTR::from(TASK_ARG)).ok();
 
         // 设置 Settings
         let settings = task_def
@@ -86,7 +95,7 @@ pub fn add_task(on_login: bool) -> Result<(), String> {
         // 注册任务
         let _ = root_folder
             .RegisterTaskDefinition(
-                &BSTR::from("Defender-rs"),
+                &BSTR::from(TASK_NAME),
                 &task_def,
                 TASK_CREATE_OR_UPDATE.0,
                 &VARIANT::default(),
@@ -96,30 +105,6 @@ pub fn add_task(on_login: bool) -> Result<(), String> {
             )
             .map_err(|e| format!("RegisterTaskDefinition failed: {e:?}"))?;
 
-        Ok(())
-    }
-}
-
-pub fn remove_task() -> Result<(), String> {
-    unsafe {
-        let task_service: ITaskService =
-            CoCreateInstance(&TaskScheduler, None, CLSCTX_INPROC_SERVER)
-                .map_err(|e| format!("CoCreateInstance failed: {e:?}"))?;
-        task_service
-            .Connect(
-                &VARIANT::default(),
-                &VARIANT::default(),
-                &VARIANT::default(),
-                &VARIANT::default(),
-            )
-            .map_err(|e| format!("Connect failed: {e:?}"))?;
-        let root_folder = task_service
-            .GetFolder(&BSTR::from("\\"))
-            .map_err(|e| format!("GetFolder failed: {e:?}"))?;
-        // 删除任务
-        let _ = root_folder
-            .DeleteTask(&BSTR::from("Defender-rs"), 0)
-            .map_err(|e| format!("DeleteTask failed: {e:?}"))?;
         Ok(())
     }
 }
