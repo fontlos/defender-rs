@@ -1,12 +1,11 @@
-use windows::core::BSTR;
 use windows::Win32::System::Com::CoInitialize;
+use windows::core::BSTR;
 
 use std::fs::OpenOptions;
 use std::io::Write;
 
 use crate::com;
 use crate::ctx::Ctx;
-
 
 pub fn startup() -> bool {
     let mut file = OpenOptions::new()

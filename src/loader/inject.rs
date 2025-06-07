@@ -1,4 +1,3 @@
-use std::ffi::CString;
 use windows::Win32::{
     Foundation::{CloseHandle, HANDLE},
     Security::SECURITY_ATTRIBUTES,
@@ -18,6 +17,8 @@ use windows::Win32::{
 };
 
 use windows::core::{PCSTR, PSTR};
+
+use std::ffi::CString;
 
 pub fn inject(dll_path: &str, proc_name: &str) -> windows::core::Result<HANDLE> {
     let mut si = STARTUPINFOA::default();

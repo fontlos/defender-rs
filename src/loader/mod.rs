@@ -8,8 +8,8 @@ use windows::Win32::System::{
     Com::{COINIT_MULTITHREADED, CoInitializeEx, CoUninitialize},
     Console::{ATTACH_PARENT_PROCESS, AllocConsole, AttachConsole, FreeConsole},
     SystemInformation::{
-    VerSetConditionMask, VerifyVersionInfoA, VER_PRODUCT_TYPE,OSVERSIONINFOEXA
-}
+        OSVERSIONINFOEXA, VER_PRODUCT_TYPE, VerSetConditionMask, VerifyVersionInfoA,
+    },
 };
 
 use crate::ctx::Ctx;

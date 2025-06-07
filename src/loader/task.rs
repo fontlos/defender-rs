@@ -15,13 +15,13 @@ use windows::core::{BSTR, Interface};
 pub fn edit_task(disable: bool, on_login: bool) -> Result<(), String> {
     const TASK_NAME: &str = "Defender-rs";
     const TASK_ARG: &str = "--auto";
-    unsafe {
-        let (trigger_type, logon_type) = if !on_login {
-            (TASK_TRIGGER_BOOT, TASK_LOGON_SERVICE_ACCOUNT)
-        } else {
-            (TASK_TRIGGER_LOGON, TASK_LOGON_NONE)
-        };
+    let (trigger_type, logon_type) = if !on_login {
+        (TASK_TRIGGER_BOOT, TASK_LOGON_SERVICE_ACCOUNT)
+    } else {
+        (TASK_TRIGGER_LOGON, TASK_LOGON_NONE)
+    };
 
+    unsafe {
         // 创建 TaskService
         let task_service: ITaskService =
             CoCreateInstance(&TaskScheduler, None, CLSCTX_INPROC_SERVER)
