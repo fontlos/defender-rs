@@ -92,12 +92,23 @@ pub fn run() {
     }
 
     // 默认情况下我们使用 on boot 的方式添加任务, 除非显式指定 `--on-login` 参数
-    match task::add_task(args.on_login) {
-        Ok(_) => {
-            println!("[Info] Successfully add auto task");
+    if args.disable {
+        match task::remove_task() {
+            Ok(_) => {
+                println!("[Info] Successfully remove auto task");
+            }
+            Err(e) => {
+                println!("[Error] Failed to remove auto task: {}", e);
+            }
         }
-        Err(e) => {
-            println!("[Error] Failed to add auto task: {}", e);
+    } else {
+        match task::add_task(args.on_login) {
+            Ok(_) => {
+                println!("[Info] Successfully add auto task");
+            }
+            Err(e) => {
+                println!("[Error] Failed to add auto task: {}", e);
+            }
         }
     }
 

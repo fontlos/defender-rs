@@ -181,6 +181,58 @@ pub fn register_av_status(name: *mut u16, file: &mut std::fs::File) -> Result<()
     Ok(())
 }
 
+pub fn unregister_as_status(_name: *mut u16, file: &mut std::fs::File) -> Result<(), String> {
+    unsafe {
+        let mut obj: *mut c_void = std::ptr::null_mut();
+        let hr = cocreate_instance(&CLSID_WSC_ISV, &IID_IWSC_ASSTATUS, &mut obj);
+        let _ = writeln!(
+            file,
+            "[defender-rs][debug] CoCreateInstance (AS) for unregister: 0x{:x}, obj=0x{:x}",
+            hr.0, obj as usize
+        );
+        if hr.0 < 0 || obj.is_null() {
+            return Err(format!(
+                "CoCreateInstance IWscASStatus failed: 0x{:x}",
+                hr.0
+            ));
+        }
+        let iface = obj as *mut IWscASStatus;
+        let vtbl = (*iface).lp_vtbl;
+        let hr = ((*vtbl).unregister)(iface as *mut _);
+        let _ = writeln!(file, "[defender-rs] Unregister (AS): 0x{:x}", hr.0);
+        if hr.0 < 0 {
+            return Err(format!("Unregister IWscASStatus failed: 0x{:x}", hr.0));
+        }
+    }
+    Ok(())
+}
+
+pub fn unregister_av_status(_name: *mut u16, file: &mut std::fs::File) -> Result<(), String> {
+    unsafe {
+        let mut obj: *mut c_void = std::ptr::null_mut();
+        let hr = cocreate_instance(&CLSID_WSC_ISV, &IID_IWSC_AVSTATUS4, &mut obj);
+        let _ = writeln!(
+            file,
+            "[defender-rs][debug] CoCreateInstance (AV) for unregister: 0x{:x}, obj=0x{:x}",
+            hr.0, obj as usize
+        );
+        if hr.0 < 0 || obj.is_null() {
+            return Err(format!(
+                "CoCreateInstance IWscAVStatus4 failed: 0x{:x}",
+                hr.0
+            ));
+        }
+        let iface = obj as *mut IWscAVStatus4;
+        let vtbl = (*iface).lp_vtbl;
+        let hr = ((*vtbl).unregister)(iface as *mut _);
+        let _ = writeln!(file, "[defender-rs] Unregister (AV): 0x{:x}", hr.0);
+        if hr.0 < 0 {
+            return Err(format!("Unregister IWscAVStatus4 failed: 0x{:x}", hr.0));
+        }
+    }
+    Ok(())
+}
+
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::thread;
 use std::time::Duration;
