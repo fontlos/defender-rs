@@ -13,8 +13,6 @@ name = "defender_rs_loader"
 path = "src/main.rs"
 
 [dependencies]
-clap = { version = "4.5.39", features = ["derive"] }
-widestring = "1.2.0"
 windows = { version = "0.61.1", features = [
     "Win32",
     "Win32_Security",
@@ -33,7 +31,10 @@ windows = { version = "0.61.1", features = [
     "Win32_System_Pipes",
     "Win32_System_Services",
     "Win32_System_SystemInformation",
+    "Win32_System_TaskScheduler",
     "Win32_System_Threading",
+    # 注册计划任务
+    "Win32_System_Variant",
 ] }
 
 [build-dependencies]

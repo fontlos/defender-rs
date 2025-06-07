@@ -4,11 +4,13 @@ mod ctx;
 mod ipc;
 pub mod loader;
 
+use windows::Win32::{
+    Foundation::{CloseHandle, HINSTANCE},
+    System::Threading::{CreateThread, ExitProcess, THREAD_CREATION_FLAGS},
+};
+
 use std::ffi::c_void;
 use std::sync::Once;
-
-use windows::Win32::Foundation::{CloseHandle, HINSTANCE};
-use windows::Win32::System::Threading::{CreateThread, THREAD_CREATION_FLAGS, ExitProcess};
 
 static START: Once = Once::new();
 
@@ -19,7 +21,7 @@ pub extern "system" fn DllMain(_hinst: HINSTANCE, reason: u32, _reserved: *mut c
         START.call_once(|| {
             let h = unsafe {
                 CreateThread(
-                    None, // lpThreadAttributes
+                    None,
                     0,
                     Some(entry_thread),
                     None, // 传递 hinst
@@ -36,16 +38,16 @@ pub extern "system" fn DllMain(_hinst: HINSTANCE, reason: u32, _reserved: *mut c
 }
 
 unsafe extern "system" fn entry_thread(_param: *mut c_void) -> u32 {
-    // DLL端：注册/patch后通过共享内存IPC写入状态，兼容C++ defendnot::InterProcessCommunication
-    if let Ok(ipc) = crate::ipc::InterProcessCommunication::new(
-        crate::ipc::InterProcessCommunicationMode::Write,
-        false,
-    ) {
-        ipc.data().success = crate::bootstrap::startup();
-        ipc.data().finished = true;
-    } else {
-        println!("[loader] Failed to create IPC shared memory");
+    // DLL 端 Patch 后通过共享内存 IPC 写入状态
+    match crate::ipc::Ipc::new(crate::ipc::IpcMode::Write, false) {
+        Ok(ipc) => {
+            ipc.data().success = crate::bootstrap::startup();
+            ipc.data().finished = true;
+        }
+        Err(e) => {
+            println!("[Error]: Failed to create IPC shared memory: {e}");
+        }
     }
     // 注入完成后自动退出目标进程
-    unsafe{ExitProcess(0)};
+    unsafe { ExitProcess(0) };
 }

@@ -1,8 +1,7 @@
 use std::ffi::c_void;
 use std::io::Write;
 use windows::Win32::System::Com::{CLSCTX_ALL, CoInitialize};
-use windows::core::PCWSTR;
-use windows::core::{GUID, HRESULT};
+use windows::core::{GUID, HRESULT, PCWSTR};
 
 // WSC接口相关GUID
 const CLSID_WSC_ISV: GUID = GUID::from_values(
@@ -47,7 +46,7 @@ pub fn init_com() -> Result<(), String> {
     Ok(())
 }
 
-// 兼容 C++ 的 BSTR 分配
+// BSTR 分配
 pub fn alloc_bstr_from_str(s: &str) -> *mut u16 {
     let wide: Vec<u16> = s.encode_utf16().chain(Some(0)).collect();
     unsafe { SysAllocString(PCWSTR(wide.as_ptr())) }
@@ -526,7 +525,7 @@ pub static IWSC_ASSTATUS_VTBL: IWscASStatusVtbl = IWscASStatusVtbl {
     update_status: as_update_status,
 };
 
-// 工厂函数，供 DllGetClassObject 等调用
+// 工厂函数, 供 DllGetClassObject 等调用
 pub fn create_av_status4_object() -> *mut IWscAVStatus4Impl {
     let obj = Box::new(IWscAVStatus4Impl {
         vtbl: &IWSC_AVSTATUS4_VTBL,

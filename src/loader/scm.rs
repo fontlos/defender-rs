@@ -1,5 +1,3 @@
-use std::ffi::OsStr;
-use std::os::windows::ffi::OsStrExt;
 use windows::Win32::{
     Foundation::{ERROR_SERVICE_ALREADY_RUNNING, GetLastError},
     System::Services::{
@@ -10,7 +8,11 @@ use windows::Win32::{
 };
 use windows::core::PCWSTR;
 
+use std::ffi::OsStr;
+use std::os::windows::ffi::OsStrExt;
+
 pub struct ServiceHandle(pub SC_HANDLE);
+
 impl Drop for ServiceHandle {
     fn drop(&mut self) {
         unsafe {
@@ -20,30 +22,29 @@ impl Drop for ServiceHandle {
 }
 
 pub fn open_scm() -> Option<SC_HANDLE> {
-    unsafe {
-        let h = OpenSCManagerW(None, None, SC_MANAGER_CONNECT).unwrap();
-        if h.0 == std::ptr::null_mut() {
-            None
-        } else {
-            Some(h)
-        }
+    let h = unsafe { OpenSCManagerW(None, None, SC_MANAGER_CONNECT).unwrap() };
+    if h.0 == std::ptr::null_mut() {
+        None
+    } else {
+        Some(h)
     }
 }
 
 pub fn open_service(scm: SC_HANDLE, name: &str) -> Option<SC_HANDLE> {
     let name_w: Vec<u16> = OsStr::new(name).encode_wide().chain(Some(0)).collect();
-    unsafe {
-        let h = OpenServiceW(
+
+    let h = unsafe {
+        OpenServiceW(
             scm,
             PCWSTR(name_w.as_ptr()),
             SERVICE_QUERY_STATUS | SERVICE_START,
         )
-        .unwrap();
-        if h.0 == std::ptr::null_mut() {
-            None
-        } else {
-            Some(h)
-        }
+        .unwrap()
+    };
+    if h.0 == std::ptr::null_mut() {
+        None
+    } else {
+        Some(h)
     }
 }
 

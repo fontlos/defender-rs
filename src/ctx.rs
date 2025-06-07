@@ -2,7 +2,6 @@ use std::fs::File;
 use std::io::{Read, Write};
 
 #[repr(C, packed)]
-#[derive(Debug, Clone, Copy)]
 pub struct Ctx {
     pub state: u8,
     pub verbose: u8,
@@ -11,11 +10,11 @@ pub struct Ctx {
 
 impl Ctx {
     pub fn default_with_name(name: &str) -> Self {
+        // name_buf[128] = 0; // nullterm
         let mut name_buf = [0u8; 129];
         let bytes = name.as_bytes();
         let len = bytes.len().min(128);
         name_buf[..len].copy_from_slice(&bytes[..len]);
-        // name_buf[128] = 0; // nullterm，已默认
         Ctx {
             state: 1, // ON
             verbose: 0,
