@@ -70,7 +70,7 @@ pub fn run() {
     // 等待 DLL 端写入 finished
     println!("[Info]: Waiting for DLL inject...");
 
-    inject::inject("defender_rs.dll", "c:\\Windows\\System32\\Taskmgr.exe").unwrap();
+    inject::inject("defender_core.dll", "c:\\Windows\\System32\\Taskmgr.exe").unwrap();
 
     while !ipc.data().finished {
         std::thread::sleep(std::time::Duration::from_millis(100));

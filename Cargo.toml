@@ -4,12 +4,12 @@ version = "0.1.0"
 edition = "2024"
 
 [lib]
-name = "defender_rs"
+name = "defender_core"
 crate-type = ["cdylib", "rlib"]
 path = "src/lib.rs"
 
 [[bin]]
-name = "defender_rs_loader"
+name = "defender"
 path = "src/main.rs"
 
 [dependencies]
