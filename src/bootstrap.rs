@@ -30,7 +30,7 @@ pub fn startup() -> bool {
         return false;
     }
 
-    let bstr_name = crate::com::alloc_bstr_from_str(&av_name);
+    let bstr_name = com::alloc_bstr_from_str(&av_name);
 
     // 总是先注销
     let as_unreg_result = com::unregister_as_status(bstr_name, &mut file);
