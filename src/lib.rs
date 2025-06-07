@@ -59,17 +59,20 @@ pub fn startup() -> bool {
     let ctx = match crate::ctx::Ctx::deserialize("ctx.bin") {
         Some(ctx) => ctx,
         None => {
+            debug!("[defender-rs] ctx.bin not found or invalid");
             return false;
         }
     };
     let av_name = ctx.name_str();
     if av_name.is_empty() {
+        debug!("[defender-rs] AV Name is empty, aborting");
         return false;
     }
 
     unsafe {
         let hr = CoInitialize(None);
         if hr.is_err() {
+            debug!("[defender-rs] CoInitialize failed: 0x{:x}", hr.0);
             return false;
         }
     }
@@ -82,10 +85,51 @@ pub fn startup() -> bool {
 
     // 如果 ctx.state == 0 (OFF)，只注销不注册
     if ctx.state == 0 {
+        debug!("[defender-rs] IWscASStatus Unregister result: {as_unreg_result:?}");
+        debug!("[defender-rs] IWscAVStatus4 Unregister result: {av_unreg_result:?}");
         return as_unreg_result.is_ok() && av_unreg_result.is_ok();
     }
 
     let as_result = com::register_as_status(bstr_name);
     let av_result = com::register_av_status(bstr_name);
+    debug!("[defender-rs] IWscASStatus result: {as_result:?}");
+    debug!("[defender-rs] IWscAVStatus4 result: {av_result:?}");
     as_result.is_ok() && av_result.is_ok()
+}
+
+#[cfg(debug_assertions)]
+mod debuglog {
+    use std::fs::{File, OpenOptions};
+    use std::io::Write;
+    use std::cell::RefCell;
+
+    thread_local! {
+        static LOG_FILE: RefCell<Option<File>> = RefCell::new(None);
+    }
+
+    pub fn log(args: std::fmt::Arguments) {
+        LOG_FILE.with(|cell| {
+            let mut opt = cell.borrow_mut();
+            if opt.is_none() {
+                *opt = Some(OpenOptions::new().create(true).append(true).open("D:\\defender-rs-log.txt").unwrap());
+            }
+            if let Some(file) = opt.as_mut() {
+                let _ = file.write_fmt(args);
+                let _ = file.write_all(b"\n");
+            }
+        });
+    }
+}
+
+#[cfg(debug_assertions)]
+#[macro_export]
+macro_rules! debug {
+    ($($arg:tt)*) => {
+        $crate::debuglog::log(format_args!($($arg)*));
+    };
+}
+#[cfg(not(debug_assertions))]
+#[macro_export]
+macro_rules! debug {
+    ($($arg:tt)*) => {};
 }

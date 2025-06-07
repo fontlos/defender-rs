@@ -63,7 +63,13 @@ pub fn run() {
         return;
     }
 
-    let ipc = Ipc::new(IpcMode::ReadWrite, true).expect("Failed to create IPC shared memory");
+    let ipc = match Ipc::new(IpcMode::ReadWrite, true) {
+        Ok(ipc) => ipc,
+        Err(e) => {
+            eprintln!("[Error]: IPC: {}", e);
+            return;
+        }
+    };
     ipc.data().finished = false;
     ipc.data().success = false;
 
