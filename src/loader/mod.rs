@@ -15,6 +15,16 @@ use windows::Win32::System::{
 use crate::ctx::Ctx;
 use crate::ipc::{Ipc, IpcMode};
 
+pub fn is_winserver() -> bool {
+    const VER_NT_WORKSTATION: u8 = 0x1;
+
+    let mut osvi = OSVERSIONINFOEXA::default();
+    osvi.dwOSVersionInfoSize = std::mem::size_of::<OSVERSIONINFOEXA>() as u32;
+    osvi.wProductType = VER_NT_WORKSTATION;
+    let cond_mask = unsafe { VerSetConditionMask(0, VER_PRODUCT_TYPE, 1) };
+    !unsafe { VerifyVersionInfoA(&mut osvi, VER_PRODUCT_TYPE, cond_mask).is_ok() }
+}
+
 fn alloc_console_if_needed() {
     unsafe {
         if AttachConsole(ATTACH_PARENT_PROCESS).is_err() {
@@ -44,6 +54,12 @@ pub fn run() {
     // 环境准备, 确保 wscsvc 服务已启动
     if let Err(e) = wsc::ensure_wsc() {
         eprintln!("[Error]: WSC: {}", e);
+        return;
+    }
+
+    // 检测是否为 Windows Server
+    if is_winserver() {
+        println!("[Error]: Not support Windows Server");
         return;
     }
 
