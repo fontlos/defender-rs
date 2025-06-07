@@ -1,12 +1,13 @@
-use std::ffi::CString;
-use std::mem::size_of;
-use std::ptr::null_mut;
 use windows::Win32::Foundation::*;
 use windows::Win32::System::Memory::{
     CreateFileMappingA, FILE_MAP_ALL_ACCESS, FILE_MAP_READ, FILE_MAP_WRITE, MapViewOfFile,
     OpenFileMappingA, PAGE_READWRITE, UnmapViewOfFile,
 };
 use windows::core::PCSTR;
+
+use std::ffi::CString;
+use std::mem::size_of;
+use std::ptr::null_mut;
 
 pub const IPC_SEG_NAME: &str = "defender-disabler-ipc";
 

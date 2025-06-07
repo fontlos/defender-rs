@@ -15,7 +15,6 @@ use windows::Win32::{
         },
     },
 };
-
 use windows::core::{PCSTR, PSTR};
 
 use std::ffi::CString;

@@ -1,7 +1,8 @@
-use std::ffi::c_void;
-use std::io::Write;
 use windows::Win32::System::Com::{CLSCTX_ALL, CoInitialize};
 use windows::core::{GUID, HRESULT};
+
+use std::ffi::c_void;
+use std::io::Write;
 
 // WSC接口相关GUID
 const CLSID_WSC_ISV: GUID = GUID::from_values(

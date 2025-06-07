@@ -1,5 +1,6 @@
-use crate::loader::scm::{open_scm, open_service, query_service_running, start_service};
 use std::{thread, time::Duration};
+
+use crate::loader::scm::{open_scm, open_service, query_service_running, start_service};
 
 pub fn ensure_wsc() -> Result<(), String> {
     let scm = open_scm().ok_or("Unable to open Service Control Manager")?;
