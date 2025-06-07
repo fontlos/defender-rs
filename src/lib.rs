@@ -6,8 +6,9 @@ pub mod loader;
 
 use std::ffi::c_void;
 use std::sync::Once;
+
 use windows::Win32::Foundation::{CloseHandle, HINSTANCE};
-use windows::Win32::System::Threading::{CreateThread, THREAD_CREATION_FLAGS};
+use windows::Win32::System::Threading::{CreateThread, THREAD_CREATION_FLAGS, ExitProcess};
 
 static START: Once = Once::new();
 
@@ -21,7 +22,7 @@ pub extern "system" fn DllMain(_hinst: HINSTANCE, reason: u32, _reserved: *mut c
                     None, // lpThreadAttributes
                     0,
                     Some(entry_thread),
-                    None, // lpParameter
+                    None, // 传递 hinst
                     THREAD_CREATION_FLAGS::default(),
                     None,
                 )
@@ -40,12 +41,11 @@ unsafe extern "system" fn entry_thread(_param: *mut c_void) -> u32 {
         crate::ipc::InterProcessCommunicationMode::Write,
         false,
     ) {
-        // 2. 注册/patch主流程
         ipc.data().success = crate::bootstrap::startup();
         ipc.data().finished = true;
     } else {
-        // 无法连接IPC，仍然执行主流程
-        crate::bootstrap::startup();
+        println!("[loader] Failed to create IPC shared memory");
     }
-    0
+    // 注入完成后自动退出目标进程
+    unsafe{ExitProcess(0)};
 }
