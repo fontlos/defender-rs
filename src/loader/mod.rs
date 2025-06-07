@@ -1,14 +1,26 @@
+pub mod environment;
+
 pub mod inject;
+
+pub mod scm;
 
 use crate::ipc::{InterProcessCommunication, InterProcessCommunicationMode};
 
 use crate::ctx::Ctx;
+
+pub use environment::ensure_environment;
 
 pub fn run() {
     pub const DEFAULT_AV_NAME: &str = "Defender-rs";
     let ctx = Ctx::default_with_name(DEFAULT_AV_NAME);
     ctx.serialize("ctx.bin");
     println!("[loader] Context init");
+
+    // 环境准备：确保wscsvc服务已启动
+    if let Err(e) = crate::loader::environment::ensure_environment() {
+        eprintln!("[loader][error] 环境准备失败: {}", e);
+        return;
+    }
 
     let ipc = InterProcessCommunication::new(InterProcessCommunicationMode::ReadWrite, true)
         .expect("Failed to create IPC shared memory");
