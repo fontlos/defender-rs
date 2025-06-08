@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::{Read, Write};
+use std::path::Path;
 
 #[repr(C, packed)]
 pub struct Ctx {
@@ -21,7 +22,7 @@ impl Ctx {
             name: name_buf,
         }
     }
-    pub fn serialize(&self, path: &str) {
+    pub fn serialize<P: AsRef<Path>>(&self, path: P) {
         let mut f = File::create(path).unwrap();
         let bytes = unsafe {
             std::slice::from_raw_parts(
@@ -31,7 +32,7 @@ impl Ctx {
         };
         f.write_all(bytes).unwrap();
     }
-    pub fn deserialize(path: &str) -> Option<Self> {
+    pub fn deserialize<P: AsRef<Path>>(path: P) -> Option<Self> {
         let mut f = File::open(path).ok()?;
         let mut buf = [0u8; std::mem::size_of::<Ctx>()];
         f.read_exact(&mut buf).ok()?;

@@ -2,6 +2,7 @@ mod com;
 mod ctx;
 mod ipc;
 pub mod loader;
+mod utils;
 
 use windows::Win32::{
     Foundation::{CloseHandle, HINSTANCE},
@@ -56,10 +57,10 @@ unsafe extern "system" fn entry_thread(_param: *mut c_void) -> u32 {
 }
 
 pub fn startup() -> bool {
-    let ctx = match crate::ctx::Ctx::deserialize("ctx.bin") {
+    let ctx_path = crate::utils::path("ctx.bin");
+    let ctx = match crate::ctx::Ctx::deserialize(ctx_path) {
         Some(ctx) => ctx,
         None => {
-            debug!("[defender-rs] ctx.bin not found or invalid");
             return false;
         }
     };

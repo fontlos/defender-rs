@@ -48,7 +48,8 @@ pub fn run() {
     if args.disable {
         ctx.state = 0; // OFF
     }
-    ctx.serialize("ctx.bin");
+    let ctx_path = crate::utils::path("ctx.bin");
+    ctx.serialize(ctx_path);
     println!("[Info]: Write context");
 
     // 环境准备, 确保 wscsvc 服务已启动

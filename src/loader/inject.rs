@@ -55,7 +55,8 @@ pub fn inject(dll_path: &str, proc_name: &str) -> windows::core::Result<HANDLE> 
     }
 
     // 写入 DLL 路径
-    let dll_path_c = CString::new(dll_path).unwrap();
+    let dll_path = crate::utils::path(dll_path);
+    let dll_path_c = CString::new(dll_path.to_str().unwrap()).unwrap();
     let mem = unsafe {
         VirtualAllocEx(
             pi.hProcess,
