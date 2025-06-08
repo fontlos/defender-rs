@@ -1,0 +1,103 @@
+name: Build and Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      RELEASE_NAME: ""
+      TAG_NAME: ""
+      PRERELEASE: ""
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # 这会默认启用 Rust Cache, 所以使用 Stable 版本与 Cargo.lock 配合缓存
+    - name: Setup Rust
+      uses: actions-rust-lang/setup-rust-toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+
+    - name: Build for Windows
+      run: |
+        cargo build --release
+        tar -acf ./Defender-rs.zip -C ./target/release defender.exe defender_core.dll
+
+    # 判断是否为预发布
+    - name: Determine Release Type
+      run: |
+        if ${{ github.event_name == 'workflow_dispatch' }}; then
+          echo "RELEASE_NAME=Defender-rs Nightly Build.$(date -u +'%Y.%m.%d')" >> $GITHUB_ENV
+          echo "TAG_NAME=nightly" >> $GITHUB_ENV
+          echo "PRERELEASE=true" >> $GITHUB_ENV
+        else
+          echo "RELEASE_NAME=Defender-rs Release Build.${{ github.ref_name }}" >> $GITHUB_ENV
+          echo "TAG_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
+          echo "PRERELEASE=false" >> $GITHUB_ENV
+        fi
+
+    - name: Read Release Note
+      id: read_release_note
+      run: |
+        if [ -f "./Release.md" ]; then
+          # 读取文件内容并处理换行符，以便在后续步骤中使用
+          notes_content=$(cat "./Release.md")
+          notes_content="${notes_content//'%'/'%25'}"
+          notes_content="${notes_content//$'\n'/'%0A'}"
+          notes_content="${notes_content//$'\r'/'%0D'}"
+          echo "content=${notes_content}" >> $GITHUB_OUTPUT
+        else
+          echo "content=No release notes provided." >> $GITHUB_OUTPUT
+          echo "::warning file=./Release.md::Release notes file not found. Using default message."
+        fi
+
+    - name: Generate Changelog from PRs
+      id: generate_changelog
+      if: env.PRERELEASE == 'false'
+      uses: mikepenz/release-changelog-builder-action@v5
+      with:
+        configurationJson: |
+          {
+            "categories": [
+              {
+                "title": "## What's Changed",
+                "labels": []
+              }
+            ],
+            "pr_template": "- #{{TITLE}} by @#{{AUTHOR}} (##{{NUMBER}})",
+            "template": "#{{CHANGELOG}}",
+            "pr_trim_body": true,
+            "empty_template": "## No significant changes"
+          }
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Construct Release Body
+      id: construct_body
+      run: |
+        release_body="${{ steps.read_release_note.outputs.content }}"
+        if [[ "${{ env.PRERELEASE }}" == "false" && -n "${{ steps.generate_changelog.outputs.changelog }}" ]]; then
+          release_body="${release_body}\n\n${{ steps.generate_changelog.outputs.changelog }}"
+        fi
+        echo "body<<EOF" >> $GITHUB_OUTPUT
+        echo -e "$release_body" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    # 创建 Release 并上传构建产物
+    - name: Create Release
+      id: create_release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: ${{ env.RELEASE_NAME }}
+        tag_name: ${{ env.TAG_NAME }}
+        body: ${{ steps.construct_body.outputs.body }}
+        draft: false
+        prerelease: ${{ env.PRERELEASE == 'true' }}
+        files: ./Defender-rs.zip
