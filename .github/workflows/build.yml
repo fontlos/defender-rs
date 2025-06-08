@@ -13,12 +13,14 @@ jobs:
       RELEASE_NAME: ""
       TAG_NAME: ""
       PRERELEASE: ""
+      RELEASE_BODY: ""
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
-    # 这会默认启用 Rust Cache, 所以使用 Stable 版本与 Cargo.lock 配合缓存
     - name: Setup Rust
       uses: actions-rust-lang/setup-rust-toolchain@v1
       with:
@@ -32,8 +34,10 @@ jobs:
 
     # 判断是否为预发布
     - name: Determine Release Type
+      id: determine_release
+      shell: bash
       run: |
-        if ${{ github.event_name == 'workflow_dispatch' }}; then
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
           echo "RELEASE_NAME=Defender-rs Nightly Build.$(date -u +'%Y.%m.%d')" >> $GITHUB_ENV
           echo "TAG_NAME=nightly" >> $GITHUB_ENV
           echo "PRERELEASE=true" >> $GITHUB_ENV
@@ -45,14 +49,13 @@ jobs:
 
     - name: Read Release Note
       id: read_release_note
+      shell: bash
       run: |
         if [ -f "./Release.md" ]; then
-          # 读取文件内容并处理换行符，以便在后续步骤中使用
           notes_content=$(cat "./Release.md")
-          notes_content="${notes_content//'%'/'%25'}"
-          notes_content="${notes_content//$'\n'/'%0A'}"
-          notes_content="${notes_content//$'\r'/'%0D'}"
-          echo "content=${notes_content}" >> $GITHUB_OUTPUT
+          echo "content<<EOF" >> $GITHUB_OUTPUT
+          echo "$notes_content" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
         else
           echo "content=No release notes provided." >> $GITHUB_OUTPUT
           echo "::warning file=./Release.md::Release notes file not found. Using default message."
@@ -81,16 +84,18 @@ jobs:
 
     - name: Construct Release Body
       id: construct_body
+      shell: bash
       run: |
         release_body="${{ steps.read_release_note.outputs.content }}"
         if [[ "${{ env.PRERELEASE }}" == "false" && -n "${{ steps.generate_changelog.outputs.changelog }}" ]]; then
-          release_body="${release_body}\n\n${{ steps.generate_changelog.outputs.changelog }}"
+          release_body="${release_body}
+
+          ${{ steps.generate_changelog.outputs.changelog }}"
         fi
         echo "body<<EOF" >> $GITHUB_OUTPUT
-        echo -e "$release_body" >> $GITHUB_OUTPUT
+        echo "$release_body" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
 
-    # 创建 Release 并上传构建产物
     - name: Create Release
       id: create_release
       uses: softprops/action-gh-release@v1
