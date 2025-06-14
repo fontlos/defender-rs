@@ -28,7 +28,7 @@ pub fn is_winserver() -> bool {
 fn alloc_console_if_needed() {
     unsafe {
         if AttachConsole(ATTACH_PARENT_PROCESS).is_err() {
-            AllocConsole().expect("Failed to allocate console");
+            AllocConsole().expect("[Error]: Allocate console failed");
         }
     }
 }
@@ -82,11 +82,13 @@ pub fn run() {
     while !ipc.data().finished {
         std::thread::sleep(std::time::Duration::from_millis(100));
     }
-    println!(
-        "[Info] Inject DLL: {}, success: {}",
-        ipc.data().finished,
-        ipc.data().success
-    );
+
+    if ipc.data().success {
+        println!("[Info]: Inject succeeded");
+    } else {
+        eprintln!("[Error]: Inject failed");
+        return;
+    }
 
     // 防止进程意外中断, 添加或删除计划任务时, 我们在外面初始化, 注意下面成对的回收
     unsafe {
@@ -95,13 +97,15 @@ pub fn run() {
 
     // 默认情况下我们使用 on boot 的方式添加任务, 除非显式指定 `--on-login` 参数
     if !args.auto {
-        match task::edit_task(args.disable, args.on_login) {
-            Ok(_) => {
-                println!("[Info] Successfully edit auto task");
-            }
-            Err(e) => {
-                println!("[Error] Failed to edit auto task: {}", e);
-            }
+        let mode = if args.disable {
+            "remove"
+        } else {
+            "add"
+        };
+        if let Err(e) = task::edit_task(args.disable, args.on_login) {
+            eprintln!("[Error]: Failed to {} auto task: {}", mode, e);
+        } else {
+            println!("[Info]: Successfully {} auto task", mode);
         }
     }
 
