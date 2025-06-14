@@ -1,4 +1,4 @@
-use windows::Win32::System::Com::{CLSCTX_ALL, CoInitialize};
+use windows::Win32::System::Com::CLSCTX_ALL;
 use windows::core::{GUID, HRESULT};
 
 use std::ffi::c_void;
@@ -161,26 +161,14 @@ unsafe fn cocreate_instance(rclsid: &GUID, riid: &GUID, ppv: *mut *mut c_void) -
     unsafe { CoCreateInstance(rclsid, std::ptr::null_mut(), CLSCTX_ALL.0, riid, ppv) }
 }
 
-pub fn register_as_status(name: *mut u16) -> Result<(), String> {
+pub fn register_as_status(name: *mut u16) -> bool {
     unsafe {
-        let hr_init = CoInitialize(None);
-        if hr_init.is_err() {
-            return Err(format!("CoInitialize failed: 0x{:x}", hr_init.0));
-        }
+        // CoInitialize 已在 startup() 中初始化
         let mut obj: *mut c_void = std::ptr::null_mut();
         let hr = cocreate_instance(&CLSID_WSC_ISV, &IID_IWSC_ASSTATUS, &mut obj);
         if hr.0 < 0 || obj.is_null() {
-            debug!(
-                "[defender-rs] CoCreateInstance IWscASStatus failed: 0x{:x}",
-                hr.0
-            );
-            debug!("[defender-rs] CLSID_WSC_ISV: {CLSID_WSC_ISV:?}");
-            debug!("[defender-rs] IID_IWSC_ASSTATUS: {IID_IWSC_ASSTATUS:?}");
-            debug!("[defender-rs] PID: {}", std::process::id());
-            return Err(format!(
-                "CoCreateInstance IWscASStatus failed: 0x{:x}",
-                hr.0
-            ));
+            debug!("CoCreateInstance IWscASStatus failed: 0x{:x}", hr.0);
+            return false;
         }
         let iface = obj as *mut IWscASStatus;
         let vtbl = (*iface).lp_vtbl;
@@ -189,29 +177,17 @@ pub fn register_as_status(name: *mut u16) -> Result<(), String> {
         let _ = ((*vtbl).register)(iface as *mut _, bstr, bstr, 0, 0);
         let _ = ((*vtbl).update_status)(iface as *mut _, 0, 1);
     }
-    Ok(())
+    true
 }
 
-pub fn register_av_status(name: *mut u16) -> Result<(), String> {
+pub fn register_av_status(name: *mut u16) -> bool {
     unsafe {
-        let hr_init = CoInitialize(None);
-        if hr_init.is_err() {
-            return Err(format!("CoInitialize failed: 0x{:x}", hr_init.0));
-        }
+        // CoInitialize 已在 startup() 中初始化
         let mut obj: *mut c_void = std::ptr::null_mut();
         let hr = cocreate_instance(&CLSID_WSC_ISV, &IID_IWSC_AVSTATUS4, &mut obj);
         if hr.0 < 0 || obj.is_null() {
-            debug!(
-                "[defender-rs][error] CoCreateInstance IWscAVStatus4 failed: 0x{:x}",
-                hr.0
-            );
-            debug!("[defender-rs][debug] CLSID_WSC_ISV: {CLSID_WSC_ISV:?}");
-            debug!("[defender-rs][debug] IID_IWSC_AVSTATUS4: {IID_IWSC_AVSTATUS4:?}");
-            debug!("[defender-rs][debug] PID: {}", std::process::id());
-            return Err(format!(
-                "CoCreateInstance IWscAVStatus4 failed: 0x{:x}",
-                hr.0
-            ));
+            debug!("CoCreateInstance IWscAVStatus4 failed: 0x{:x}", hr.0);
+            return false;
         }
         let iface = obj as *mut IWscAVStatus4;
         let vtbl = (*iface).lp_vtbl;
@@ -223,45 +199,43 @@ pub fn register_av_status(name: *mut u16) -> Result<(), String> {
         let _ = ((*vtbl).update_settings_substatus)(iface as *mut _, 1);
         let _ = ((*vtbl).update_protection_update_substatus)(iface as *mut _, 1);
     }
-    Ok(())
+    true
 }
 
-pub fn unregister_as_status(_name: *mut u16) -> Result<(), String> {
+pub fn unregister_as_status() -> bool {
     unsafe {
         let mut obj: *mut c_void = std::ptr::null_mut();
         let hr = cocreate_instance(&CLSID_WSC_ISV, &IID_IWSC_ASSTATUS, &mut obj);
         if hr.0 < 0 || obj.is_null() {
-            return Err(format!(
-                "CoCreateInstance IWscASStatus failed: 0x{:x}",
-                hr.0
-            ));
+            debug!("CoCreateInstance AS failed: 0x{:x}", hr.0);
+            return false;
         }
         let iface = obj as *mut IWscASStatus;
         let vtbl = (*iface).lp_vtbl;
         let hr = ((*vtbl).unregister)(iface as *mut _);
         if hr.0 < 0 {
-            return Err(format!("Unregister IWscASStatus failed: 0x{:x}", hr.0));
+            debug!("Unregister AS failed: 0x{:x}", hr.0);
+            return false;
         }
     }
-    Ok(())
+    true
 }
 
-pub fn unregister_av_status(_name: *mut u16) -> Result<(), String> {
+pub fn unregister_av_status() -> bool {
     unsafe {
         let mut obj: *mut c_void = std::ptr::null_mut();
         let hr = cocreate_instance(&CLSID_WSC_ISV, &IID_IWSC_AVSTATUS4, &mut obj);
         if hr.0 < 0 || obj.is_null() {
-            return Err(format!(
-                "CoCreateInstance IWscAVStatus4 failed: 0x{:x}",
-                hr.0
-            ));
+            debug!("CoCreateInstance AV failed: 0x{:x}", hr.0);
+            return false;
         }
         let iface = obj as *mut IWscAVStatus4;
         let vtbl = (*iface).lp_vtbl;
         let hr = ((*vtbl).unregister)(iface as *mut _);
         if hr.0 < 0 {
-            return Err(format!("Unregister IWscAVStatus4 failed: 0x{:x}", hr.0));
+            debug!("Unregister AV failed: 0x{:x}", hr.0);
+            return false;
         }
     }
-    Ok(())
+    true
 }
