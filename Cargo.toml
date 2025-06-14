@@ -1,6 +1,6 @@
 [package]
 name = "defender_rs"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 
 [lib]
@@ -13,7 +13,7 @@ name = "defender"
 path = "src/main.rs"
 
 [dependencies]
-windows = { version = "0.61.1", features = [
+windows = { version = "0.61.3", features = [
     "Win32",
     "Win32_Security",
     "Win32_System",
