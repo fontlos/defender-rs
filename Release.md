@@ -1,4 +1,4 @@
-## Defender-rs Build.v0.1.0
+## Defender-rs Build.v0.1.1
 
 An even funnier way to disable Windows Defender.
 
