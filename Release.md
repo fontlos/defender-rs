@@ -15,4 +15,4 @@ Defender will flag/block the binaries. Please temporarily disable Defender real-
 **Abstract:**
 
 - Return directly when an injection fails to avoid creating an invalid scheduled task
-- Added binaries in debug mode, which will generate logs in `C:/Windows/Temp/defender-rs-log.txt` when errors occur
+- Added binaries in debug mode, which will generate logs when errors occur
