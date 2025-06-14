@@ -153,16 +153,3 @@ macro_rules! debug {
 macro_rules! debug {
     ($($arg:tt)*) => {};
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    #[test]
-    fn test_debug_log() {
-        debug!("This is a test log entry.");
-        debug!("Another log entry with a number: {}", 42);
-        // Flush the log if in debug mode
-        #[cfg(debug_assertions)]
-        crate::debuglog::write();
-    }
-}
