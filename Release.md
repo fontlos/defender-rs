@@ -12,4 +12,7 @@ A fully Rust rewrite of defendnot, 100% compatible with the original [C++ versio
 
 Defender will flag/block the binaries. Please temporarily disable Defender real-time/tamper protection or add an exclusion before use.
 
-The first public release!
+**Abstract:**
+
+- Return directly when an injection fails to avoid creating an invalid scheduled task
+- Added binaries in debug mode, which will generate logs in `C:/Windows/Temp/defender-rs-log.txt` when errors occur

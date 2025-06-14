@@ -38,6 +38,8 @@ A fully Rust rewrite of defendnot, 100% compatible with the original [C++ versio
      --on-login     Schedule autorun on login (default: on boot)
    ```
 
+When you encounter an error and need feedback, you can download the **Debug** version, which will generate logs in `C:/Windows/Temp/defender-rs-log.txt`
+
 ## How It Works
 
 Windows Security Center (WSC) allows third-party AV/AS to register themselves. When Defender detects another AV/AS registered, it disables itself. defender-rs communicates with WSC via COM, registering a custom AV/AS product so Defender enters "protected" state.
