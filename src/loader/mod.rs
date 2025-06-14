@@ -97,11 +97,7 @@ pub fn run() {
 
     // 默认情况下我们使用 on boot 的方式添加任务, 除非显式指定 `--on-login` 参数
     if !args.auto {
-        let mode = if args.disable {
-            "remove"
-        } else {
-            "add"
-        };
+        let mode = if args.disable { "remove" } else { "add" };
         if let Err(e) = task::edit_task(args.disable, args.on_login) {
             eprintln!("[Error]: Failed to {} auto task: {}", mode, e);
         } else {
