@@ -45,13 +45,22 @@ unsafe extern "system" fn entry_thread(_param: *mut c_void) -> u32 {
     // DLL 端 Patch 后通过共享内存 IPC 写入状态
     match crate::ipc::Ipc::new(crate::ipc::IpcMode::Write, false) {
         Ok(ipc) => {
-            ipc.data().success = startup();
+            if startup() {
+                ipc.data().success = true;
+                #[cfg(debug_assertions)]
+                crate::debuglog::clear();
+            } else {
+                ipc.data().success = false;
+            }
             ipc.data().finished = true;
         }
-        Err(e) => {
-            println!("[Error]: Failed to create IPC shared memory: {e}");
+        Err(_e) => {
+            debug!("IPC failed: {_e}");
         }
     }
+    #[cfg(debug_assertions)]
+    crate::debuglog::write();
+
     // 注入完成后自动退出目标进程
     unsafe { ExitProcess(0) };
 }
@@ -66,65 +75,69 @@ pub fn startup() -> bool {
     };
     let av_name = ctx.name_str();
     if av_name.is_empty() {
-        debug!("[defender-rs] AV Name is empty, aborting");
+        debug!("No AV Name");
         return false;
-    }
-
-    unsafe {
-        let hr = CoInitialize(None);
-        if hr.is_err() {
-            debug!("[defender-rs] CoInitialize failed: 0x{:x}", hr.0);
-            return false;
-        }
     }
 
     let bstr_name = BSTR::from(&av_name).as_ptr() as *mut u16;
 
+    // 为下面注销注册初始化 COM 环境
+    unsafe {
+        let hr = CoInitialize(None);
+        if hr.is_err() {
+            debug!("CoInitialize failed: 0x{:x}", hr.0);
+            return false;
+        }
+    }
+
     // 总是先注销
-    let as_unreg_result = com::unregister_as_status(bstr_name);
-    let av_unreg_result = com::unregister_av_status(bstr_name);
+    let as_unreg_result = com::unregister_as_status();
+    let av_unreg_result = com::unregister_av_status();
 
     // 如果 ctx.state == 0 (OFF)，只注销不注册
     if ctx.state == 0 {
-        debug!("[defender-rs] IWscASStatus Unregister result: {as_unreg_result:?}");
-        debug!("[defender-rs] IWscAVStatus4 Unregister result: {av_unreg_result:?}");
-        return as_unreg_result.is_ok() && av_unreg_result.is_ok();
+        return as_unreg_result && av_unreg_result;
     }
 
     let as_result = com::register_as_status(bstr_name);
     let av_result = com::register_av_status(bstr_name);
-    debug!("[defender-rs] IWscASStatus result: {as_result:?}");
-    debug!("[defender-rs] IWscAVStatus4 result: {av_result:?}");
-    as_result.is_ok() && av_result.is_ok()
+    as_result && av_result
 }
 
 #[cfg(debug_assertions)]
 mod debuglog {
     use std::cell::RefCell;
-    use std::fs::{File, OpenOptions};
+    use std::fs::OpenOptions;
     use std::io::Write;
 
     thread_local! {
-        static LOG_FILE: RefCell<Option<File>> = RefCell::new(None);
+        static LOG_BUF: RefCell<Vec<String>> = RefCell::new(Vec::new());
     }
 
     pub fn log(args: std::fmt::Arguments) {
-        LOG_FILE.with(|cell| {
-            let mut opt = cell.borrow_mut();
-            if opt.is_none() {
-                *opt = Some(
-                    OpenOptions::new()
-                        .create(true)
-                        .append(true)
-                        .open("D:\\defender-rs-log.txt")
-                        .unwrap(),
-                );
-            }
-            if let Some(file) = opt.as_mut() {
-                let _ = file.write_fmt(args);
-                let _ = file.write_all(b"\n");
+        LOG_BUF.with(|buf| {
+            buf.borrow_mut().push(format!("[Debug] {}", args));
+        });
+    }
+
+    pub fn write() {
+        LOG_BUF.with(|buf| {
+            if !buf.borrow().is_empty() {
+                if let Ok(mut file) = OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open("C:/Windows/Temp/defender-rs-log.txt")
+                {
+                    for line in buf.borrow().iter() {
+                        let _ = writeln!(file, "{}", line);
+                    }
+                }
             }
         });
+    }
+
+    pub fn clear() {
+        LOG_BUF.with(|buf| buf.borrow_mut().clear());
     }
 }
 
@@ -139,4 +152,17 @@ macro_rules! debug {
 #[macro_export]
 macro_rules! debug {
     ($($arg:tt)*) => {};
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_debug_log() {
+        debug!("This is a test log entry.");
+        debug!("Another log entry with a number: {}", 42);
+        // Flush the log if in debug mode
+        #[cfg(debug_assertions)]
+        crate::debuglog::write();
+    }
 }

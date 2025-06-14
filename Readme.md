@@ -43,11 +43,13 @@ A fully Rust rewrite of defendnot, 100% compatible with the original [C++ versio
 Windows Security Center (WSC) allows third-party AV/AS to register themselves. When Defender detects another AV/AS registered, it disables itself. defender-rs communicates with WSC via COM, registering a custom AV/AS product so Defender enters "protected" state.
 
 ## Limitations
+
 - **Must stay on disk:** Scheduled task autorun requires binaries to remain for persistence after reboot.
 - **No Windows Server support:** WSC is not available on Server editions, so registration is blocked.
 - **Defender will flag/block:** You must temporarily disable Defender real-time/tamper protection or add an exclusion to allow the program to remain on disk and execute
 
 ## Legitimate Use Cases
+
 - Reduce resource usage in dev/test environments
 - Research/education on Windows security mechanisms
 - Home lab experimentation
@@ -56,6 +58,7 @@ Windows Security Center (WSC) allows third-party AV/AS to register themselves. W
 > No support for illegal use. You are responsible for any consequences.
 
 ## Credits
+
 - [es3n1n](https://github.com/es3n1n) for original design and reverse engineering
 - [mrbruh](https://mrbruh.com) for reverse engineering and testing
 - [pindos](https://github.com/pind0s) for WSC debugging support
