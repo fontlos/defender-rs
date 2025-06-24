@@ -32,7 +32,7 @@ jobs:
         cargo build --release
         tar -acf ./Defender-rs.zip -C ./target/release defender.exe defender_core.dll
         cargo build --lib
-        copy /y .\target\release\defender.exe .\target\debug\defender.exe
+        Copy-Item -Force .\target\release\defender.exe .\target\debug\defender.exe
         tar -acf ./Defender-rs-debug.zip -C ./target/debug defender.exe defender_core.dll
 
     # 判断是否为预发布
