@@ -25,14 +25,16 @@ pub fn is_winserver() -> bool {
     !unsafe { VerifyVersionInfoA(&mut osvi, VER_PRODUCT_TYPE, cond_mask).is_ok() }
 }
 
+#[allow(dead_code)]
 fn alloc_console_if_needed() {
     unsafe {
         if AttachConsole(ATTACH_PARENT_PROCESS).is_err() {
-            AllocConsole();
+            AllocConsole().expect("[Error]: Failed to allocate console");
         }
     }
 }
 
+#[allow(dead_code)]
 fn free_console_if_needed() {
     unsafe {
         FreeConsole().ok();
@@ -41,10 +43,9 @@ fn free_console_if_needed() {
 
 pub fn run() {
     let args = args::Args::parse();
-    if args.auto {
-        unsafe {
-            FreeConsole().ok();
-        }
+    #[cfg(not(debug_assertions))]
+    if !args.auto {
+        alloc_console_if_needed();
     }
     let mut ctx = Ctx::default_with_name(&args.name);
     if args.disable {
@@ -120,7 +121,8 @@ pub fn run() {
         CoUninitialize();
     }
 
-    // if !args.auto {
-    //     free_console_if_needed();
-    // }
+    #[cfg(not(debug_assertions))]
+    if !args.auto {
+        free_console_if_needed();
+    }
 }
