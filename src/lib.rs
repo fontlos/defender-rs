@@ -66,13 +66,18 @@ unsafe extern "system" fn entry_thread(_param: *mut c_void) -> u32 {
 }
 
 pub fn startup() -> bool {
-    let ctx_path = crate::utils::path("ctx.bin");
+    debug!("Call Startup");
+    let current_path = std::env::var("DEFENDER_RS_PATH").unwrap();
+    let current_path = std::path::PathBuf::from(current_path);
+    let ctx_path = current_path.join("ctx.bin");
     let ctx = match crate::ctx::Ctx::deserialize(ctx_path) {
         Some(ctx) => ctx,
         None => {
+            debug!("No Context found");
             return false;
         }
     };
+    debug!("Context state: {:?}", ctx.state);
     let av_name = ctx.name_str();
     if av_name.is_empty() {
         debug!("No AV Name");
@@ -123,11 +128,10 @@ mod debuglog {
     pub fn write() {
         LOG_BUF.with(|buf| {
             if !buf.borrow().is_empty() {
-                if let Ok(mut file) = OpenOptions::new()
-                    .create(true)
-                    .append(true)
-                    .open("C:/Windows/Temp/defender-rs-log.txt")
-                {
+                let current_path = std::env::var("DEFENDER_RS_PATH").unwrap();
+                let current_path = std::path::PathBuf::from(current_path);
+                let log_file = current_path.join("defender-rs-log.txt");
+                if let Ok(mut file) = OpenOptions::new().create(true).append(true).open(log_file) {
                     for line in buf.borrow().iter() {
                         let _ = writeln!(file, "{}", line);
                     }

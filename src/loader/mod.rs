@@ -28,7 +28,7 @@ pub fn is_winserver() -> bool {
 fn alloc_console_if_needed() {
     unsafe {
         if AttachConsole(ATTACH_PARENT_PROCESS).is_err() {
-            AllocConsole().expect("[Error]: Allocate console failed");
+            AllocConsole();
         }
     }
 }
@@ -41,15 +41,20 @@ fn free_console_if_needed() {
 
 pub fn run() {
     let args = args::Args::parse();
-    if !args.auto {
-        alloc_console_if_needed();
+    if args.auto {
+        unsafe {
+            FreeConsole().ok();
+        }
     }
     let mut ctx = Ctx::default_with_name(&args.name);
     if args.disable {
         ctx.state = 0; // OFF
     }
-    let ctx_path = crate::utils::path("ctx.bin");
-    ctx.serialize(ctx_path);
+    let current_path = std::env::current_exe().unwrap();
+    let current_dir = current_path.parent().unwrap();
+    unsafe { std::env::set_var("DEFENDER_RS_PATH", current_dir.to_str().unwrap()) };
+    let ctx_path = current_dir.join("ctx.bin");
+    ctx.serialize(&ctx_path);
     println!("[Info]: Write context");
 
     // 环境准备, 确保 wscsvc 服务已启动
@@ -115,7 +120,7 @@ pub fn run() {
         CoUninitialize();
     }
 
-    if !args.auto {
-        free_console_if_needed();
-    }
+    // if !args.auto {
+    //     free_console_if_needed();
+    // }
 }
