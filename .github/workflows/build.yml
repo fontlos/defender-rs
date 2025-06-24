@@ -28,12 +28,11 @@ jobs:
         override: true
 
     - name: Build for Windows
-      shell: bash
       run: |
         cargo build --release
         tar -acf ./Defender-rs.zip -C ./target/release defender.exe defender_core.dll
         cargo build --lib
-        cp ./target/release/defender.exe ./target/debug/defender.exe
+        copy /y .\target\release\defender.exe .\target\debug\defender.exe
         tar -acf ./Defender-rs-debug.zip -C ./target/debug defender.exe defender_core.dll
 
     # 判断是否为预发布
