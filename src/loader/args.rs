@@ -15,12 +15,12 @@ impl Args {
 
         while let Some(arg) = args.next() {
             match arg.as_str() {
-                "--name" => {
+                "-n" | "--name" => {
                     if let Some(val) = args.next() {
                         name = val;
                     }
                 }
-                "--disable" => {
+                "-d" | "--disable" => {
                     disable = true;
                 }
                 "--auto" => {
