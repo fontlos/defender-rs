@@ -25,38 +25,31 @@ pub fn is_winserver() -> bool {
     !unsafe { VerifyVersionInfoA(&mut osvi, VER_PRODUCT_TYPE, cond_mask).is_ok() }
 }
 
-#[allow(dead_code)]
-fn alloc_console_if_needed() {
-    unsafe {
-        if AttachConsole(ATTACH_PARENT_PROCESS).is_err() {
-            AllocConsole().expect("[Error]: Failed to allocate console");
-        }
-    }
-}
-
-#[allow(dead_code)]
-fn free_console_if_needed() {
-    unsafe {
-        FreeConsole().ok();
-    }
-}
-
 pub fn run() {
-    let args = args::Args::parse();
-    #[cfg(not(debug_assertions))]
-    if !args.auto {
-        alloc_console_if_needed();
-    }
-    let mut ctx = Ctx::default_with_name(&args.name);
-    if args.disable {
-        ctx.state = 0; // OFF
-    }
+    // 首先设置一下环境
     let current_path = std::env::current_exe().unwrap();
     let current_dir = current_path.parent().unwrap();
     unsafe { std::env::set_var("DEFENDER_RS_PATH", current_dir.to_str().unwrap()) };
-    let ctx_path = current_dir.join("ctx.bin");
-    ctx.serialize(&ctx_path);
-    println!("[Info]: Write context");
+    // 解析命令行参数
+    let args = args::Args::parse();
+
+    if !args.auto {
+        // 只在非 auto 模式下分配控制台
+        unsafe {
+            if AttachConsole(ATTACH_PARENT_PROCESS).is_err() {
+                AllocConsole().expect("[Error]: Failed to allocate console");
+            }
+        }
+
+        // 只在非 auto 模式下写入配置
+        let mut ctx = Ctx::default_with_name(&args.name);
+        if args.disable {
+            ctx.state = 0; // OFF
+        }
+        let ctx_path = current_dir.join("ctx.bin");
+        ctx.serialize(&ctx_path);
+        println!("[Info]: Write context");
+    }
 
     // 环境准备, 确保 wscsvc 服务已启动
     if let Err(e) = wsc::ensure_wsc() {
@@ -121,8 +114,9 @@ pub fn run() {
         CoUninitialize();
     }
 
-    #[cfg(not(debug_assertions))]
     if !args.auto {
-        free_console_if_needed();
+        unsafe {
+            FreeConsole().ok();
+        }
     }
 }
