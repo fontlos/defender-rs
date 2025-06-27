@@ -1,4 +1,4 @@
-## Defender-rs Build.v0.1.2
+## Defender-rs Build.v0.1.3
 
 An even funnier way to disable Windows Defender.
 
@@ -14,5 +14,4 @@ Defender will flag/block the binaries. Please temporarily disable Defender real-
 
 **Abstract:**
 
-- Fix failed to find ctx.bin
-- Do not alloc console in debug mode
+- Fix: Not write ctx.bin in auto mode, avoid writing wrong context
